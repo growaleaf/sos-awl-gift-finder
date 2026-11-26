@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story of Seasons: A Wonderful Life Gift Finder</title>
+<style>
+  :root {
+    --bg: #14151c;
+    --panel: #1f212b;
+    --border: #353846;
+    --text: #e7e8ee;
+    --muted: #9497a6;
+    --accent: #3f7d4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.4;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 4px;
+  }
+  p.sub {
+    color: var(--muted);
+    margin: 0 0 24px;
+    font-size: 0.9rem;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  input[type="text"], select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .results {
+    margin-top: 16px;
+  }
+  .result-group {
+    margin-bottom: 14px;
+  }
+  .result-group h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 6px;
+    color: var(--muted);
+  }
+  ul.char-list, ul.item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  ul.char-list li, ul.item-list li {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    background: rgba(63,125,79,0.2);
+    border-color: var(--accent);
+  }
+  .empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  footer {
+    color: var(--muted);
+    font-size: 0.78rem;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 32px;
+  }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Story of Seasons: A Wonderful Life Gift Finder</h1>
+  <p class="sub">Type a gift category (Eggs, Fish, Gemstones, etc.) to see which villagers favour it. Or pick a villager to see their full favourite list.</p>
+
+  <div class="panel">
+    <label for="cat-search">Search by category</label>
+    <input type="text" id="cat-search" placeholder="e.g. Eggs, Fish, Gemstones" autocomplete="off">
+    <div class="results" id="cat-results"></div>
+  </div>
+
+  <div class="panel">
+    <label for="char-select">Browse by villager</label>
+    <select id="char-select">
+      <option value="">Choose a villager&hellip;</option>
+    </select>
+    <div class="results" id="char-results"></div>
+  </div>
+
+  <footer id="disclosure">
+    <p>Data source: sirusgaming.com, "Story of Seasons: A Wonderful Life Gift Guide – Best Gifts for Every Character" (posted June 29, 2023). Fetched 2026-11-26.</p>
+    <p>32 villagers covered by the source, all 32 parsed cleanly with a non-empty category list; none were skipped or invented.</p>
+    <p>Single source, favourite categories only, no dislikes listed. Some entries vary by age (noted where the source says so). Community gift guides can disagree with each other and with in-game behavior. Verify in-game.</p>
+  </footer>
+</main>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  var catInput = document.getElementById("cat-search");
+  var catResults = document.getElementById("cat-results");
+  var charSelect = document.getElementById("char-select");
+  var charResults = document.getElementById("char-results");
+
+  var names = VILLAGERS.map(function (v) { return v.name; }).slice().sort();
+  names.forEach(function (name) {
+    var opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    charSelect.appendChild(opt);
+  });
+
+  function renderNameGroup(container, label, villagers) {
+    if (villagers.length === 0) return;
+    var group = document.createElement("div");
+    group.className = "result-group";
+    var h = document.createElement("h3");
+    h.textContent = label + " (" + villagers.length + ")";
+    group.appendChild(h);
+    var ul = document.createElement("ul");
+    ul.className = "char-list";
+    villagers.forEach(function (v) {
+      var li = document.createElement("li");
+      li.textContent = v.name + " — " + v.group;
+      ul.appendChild(li);
+    });
+    group.appendChild(ul);
+    container.appendChild(group);
+  }
+
+  function searchCategory(query) {
+    catResults.innerHTML = "";
+    var q = query.trim().toLowerCase();
+    if (q.length === 0) return;
+
+    var matches = VILLAGERS.filter(function (v) {
+      return v.categories.some(function (c) { return c.toLowerCase().indexOf(q) !== -1; });
+    });
+
+    if (matches.length === 0) {
+      var p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "No match in the 32 villagers covered by this source.";
+      catResults.appendChild(p);
+      return;
+    }
+
+    renderNameGroup(catResults, "Favours it", matches);
+  }
+
+  function showVillager(name) {
+    charResults.innerHTML = "";
+    if (!name) return;
+    var v = VILLAGERS.find(function (x) { return x.name === name; });
+    if (!v) return;
+
+    var group = document.createElement("div");
+    group.className = "result-group";
+    var h = document.createElement("h3");
+    h.textContent = v.group;
+    group.appendChild(h);
+    var ul = document.createElement("ul");
+    ul.className = "item-list";
+    v.categories.forEach(function (c) {
+      var li = document.createElement("li");
+      li.textContent = c;
+      ul.appendChild(li);
+    });
+    group.appendChild(ul);
+    charResults.appendChild(group);
+  }
+
+  catInput.addEventListener("input", function () { searchCategory(catInput.value); });
+  charSelect.addEventListener("change", function () { showVillager(charSelect.value); });
+})();
+</script>
+</body>
+</html>
